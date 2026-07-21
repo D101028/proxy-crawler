@@ -8,7 +8,7 @@ def quick_ping(host, timeout: int) -> int:
     Ping 指定的 IP 或網域並返回連線狀態
 
     :param host: 網域名稱 (如 'google.com') 或 IP 位址 (如 '8.8.8.8')
-    :param timeout: 超時 ms 數
+    :param timeout: 超時秒數
     :return: Nonnegative integer (成功，延遲 ms) 或 -1 (失敗)
     """
     # ping() 會回傳延遲時間（秒）。若失敗則回傳 False，超時則回傳 None
@@ -19,28 +19,35 @@ def quick_ping(host, timeout: int) -> int:
     else:
         return int(response_time * 1000)
 
-def test_proxy(protocol: str, host: str, port: int, test_url: str, timeout: int) -> int:
+def test_proxy(
+        protocol: str, host: str, port: int, 
+        test_url: str, timeout: int | float, 
+        username: str | None = None, password: str | None = None) -> int:
     """
     以指定 PROXY 測試訪問 `test_url`。
 
-    :param protocol: PROXY protocol
+    :param protocol: PROXY Protocol
     :param host: PROXY Host
     :param port: PROXY Port
+    :param timeout: Timeout Seconds
+    :param username: Username for Authentication (default: None)
+    :param password: Password for Authentication (default: None)
     :return: Nonnegative integer (成功，延遲 ms) 或 -1 (失敗)
     """
-    proxy_url = f"{protocol}://{host}:{port}"
+    if username is None or password is None:
+        proxy_url = f"{protocol}://{host}:{port}"
+    else:
+        proxy_url = f"{protocol}://{username}:{password}@{host}:{port}"
 
     # 設定 requests 的 proxies 參數
     proxies = {"http": proxy_url, "https": proxy_url}
 
     try:
         # 發送請求測試
-        start_time = time.time()
         response = requests.get(test_url, proxies=proxies, timeout=timeout)
-        end_time = time.time()
 
         if response.status_code == 200:
-            return int((end_time - start_time) * 1000)
+            return int(response.elapsed.total_seconds() * 1000)
     except requests.RequestException:
         # 忽略失敗的 Proxy，不做處理
         pass
