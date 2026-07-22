@@ -191,5 +191,8 @@ class ProxyChecker:
 
 class ProxyUpdater:
     def __init__(self, nodes_checker: ProxyChecker | None = None) -> None:
-        self.nodes_checker: ProxyChecker = ProxyChecker() if nodes_checker is None else nodes_checker
+        self._nodes_checker: ProxyChecker = ProxyChecker() if nodes_checker is None else nodes_checker
+
+    def run(self):
+        pass 
 
