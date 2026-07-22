@@ -15,6 +15,8 @@ def create_host(
     # gost 啟動指令
     # 建立一個有帳密認證的 SOCKS5 代理伺服器
     gost_path = "C:/gost/gost.exe"
+    if not os.path.isfile(gost_path):
+        raise Exception(f"gost_path '{gost_path}' does not exist")
     if username is None or password is None:
         gost_args = f"-L={protocol}://:{port}"
     else:
@@ -29,6 +31,8 @@ def create_host(
         stdout=subprocess.DEVNULL,  # 直接丟棄，不佔用緩衝區
         stderr=subprocess.DEVNULL,
     )
+
+    print(f">> gost host on 0.0.0.0:{port} <<")
 
     return gost_process
 
@@ -76,8 +80,7 @@ class TestNet(unittest.TestCase):
             self.protocol, self.host, self.port, TEST_URL, RESPONSE_TIMEOUT_MS // 1000, 
             self.username, self.password
         )
-        print("Latency:", latency_ms)
-        self.assertTrue(latency_ms != -1)
+        self.assertNotEqual(latency_ms, -1)
 
 class TestProxyNode(unittest.TestCase):
     @classmethod
@@ -111,9 +114,11 @@ class TestProxyNode(unittest.TestCase):
             self.protocol, self.host, self.port, 
             username=self.username, password=self.password
         )
+        status = test_node(node)
+        print(status)
 
         # 驗證代理節點是否測試成功
-        self.assertTrue(test_node(node).alive)
+        self.assertTrue(status.alive)
 
 class TestProxyChecker(unittest.TestCase):
     @classmethod
@@ -182,6 +187,17 @@ class TestProxyChecker(unittest.TestCase):
 
         self.assertTrue(status.alive)
 
+    def test_check_and_merge(self):
+        nodes = [n[0] for n in self.nodes]
+
+        # 創建 checker，並更新所有節點
+        checker = ProxyChecker((nodes[0], nodes[1]))
+        checker.check_all()
+        self.assertEqual(len(checker.get_valid_nodes()), len(checker.get_pool()))
+
+        # 測試 + 合併
+        checker.check_and_merge_nodes((nodes[1], nodes[2], nodes[3]))
+        self.assertEqual(len(checker.get_valid_nodes()), 4)
     
 
 if __name__ == '__main__':

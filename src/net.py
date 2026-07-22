@@ -14,7 +14,7 @@ def quick_ping(host, timeout: int) -> int:
     # ping() 會回傳延遲時間（秒）。若失敗則回傳 False，超時則回傳 None
     response_time = ping(host, timeout=timeout)
     
-    if not response_time:
+    if response_time is None or response_time is False:
         return -1
     else:
         return int(response_time * 1000)
@@ -46,9 +46,11 @@ def test_proxy(
         # 發送請求測試
         response = requests.get(test_url, proxies=proxies, timeout=timeout)
 
-        if response.status_code == 200:
-            return int(response.elapsed.total_seconds() * 1000)
-    except requests.RequestException:
+        response.raise_for_status()
+        return int(response.elapsed.total_seconds() * 1000)
+    except (requests.RequestException, requests.HTTPError):
         # 忽略失敗的 Proxy，不做處理
         pass
+    except Exception as e:
+        raise e
     return -1

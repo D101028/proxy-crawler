@@ -105,6 +105,9 @@ class ProxyChecker:
     def get_status(self, node: ProxyNode) -> ProxyStatus | None:
         return self._node_pool.get(node)
 
+    def get_pool(self) -> dict[ProxyNode, ProxyStatus]:
+        return self._node_pool
+
     def pop_node(self, node: ProxyNode) -> ProxyStatus | None:
         return self._node_pool.pop(node, None)
 
