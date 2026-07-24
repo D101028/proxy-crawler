@@ -4,10 +4,13 @@ from requests import Response
 
 from urllib.parse import urlparse, urlunparse
 
+class ExceedMaxRetryError(Exception):
+    """當嘗試次數超出範圍拋出"""
+    pass
 
 class Browser:
-    def __init__(self, base_url = None, headers = None, cookies = None, 
-                 timeout = 10, max_retry = 3):
+    def __init__(self, base_url: str | None = None, headers: dict | None = None, cookies: dict | None = None, 
+                 timeout: int = 10, max_retry: int = 3):
         """
         Initializes the crawler instance with default settings.
 
@@ -22,27 +25,27 @@ class Browser:
         """
         if headers is None:
             headers = {}
-        self.cookies = cookies                  # 用於儲存請求時的 cookies
-        self.headers = headers                  # HTTP 請求標頭
-        self.base_url = base_url                # 目標網站的基礎 URL
-        self.session = requests.Session()       # requests 的 session 物件
-        self.timeout = timeout                  # 請求逾時時間（秒）
-        self.max_retry = max_retry              # 請求失敗時的重試次數
-        self.last_response = None               # 上一次的 HTTP 回應
+        self.cookies: dict | None = cookies                 # 用於儲存請求時的 cookies
+        self.headers: dict = headers                        # HTTP 請求標頭
+        self.base_url: str | None = base_url                # 目標網站的基礎 URL
+        self.session: requests.Session = requests.Session() # requests 的 session 物件
+        self.timeout: int = timeout                         # 請求逾時時間（秒）
+        self.max_retry: int = max_retry                     # 請求失敗時的重試次數
+        self.last_response: requests.Response | None = None # 上一次的 HTTP 回應
 
-    def set_base_url(self, url):
+    def set_base_url(self, url: str):
         """設定目標網站的基礎 URL"""
         self.base_url = url
 
-    def set_headers(self, headers):
+    def set_headers(self, headers: dict):
         """設定 HTTP 請求標頭"""
         self.headers = headers
 
-    def set_cookies(self, cookies):
+    def set_cookies(self, cookies: dict):
         """設定 cookies"""
         self.cookies = cookies
 
-    def request(self, method: str, url: str, **kwargs) -> Response | str:
+    def request(self, method: str, url: str, **kwargs) -> Response:
         """發送 HTTP 請求，支援重試機制"""
         if not url.startswith("http"):
             if self.base_url is None:
@@ -68,9 +71,11 @@ class Browser:
                 err = e
                 continue
         else:
-            return f"{err}"
+            if err is not None:
+                raise err
+            raise ExceedMaxRetryError(f"Exceed Max Retry: {self.max_retry}")
 
-    def get(self, url = None, **kwargs) -> Response | str:
+    def get(self, url: str | None = None, **kwargs) -> Response:
         """發送 GET 請求"""
         if url is None:
             if self.base_url is None:
@@ -78,11 +83,11 @@ class Browser:
             return self.request("GET", self.base_url, **kwargs)
         return self.request("GET", url, **kwargs)
 
-    def post(self, url, data=None, json=None, **kwargs) -> Response | str:
+    def post(self, url: str, data=None, json=None, **kwargs) -> Response:
         """發送 POST 請求"""
         return self.request("POST", url, data=data, json=json, **kwargs)
 
-    def goto(self, url, method="GET", **kwargs) -> Response | str:
+    def goto(self, url: str, method: str="GET", **kwargs) -> Response:
         """
         訪問指定 URL，並自動更新 base_url 為該 URL 的主機部分。
         預設使用 GET 方法，可指定其他 HTTP 方法。

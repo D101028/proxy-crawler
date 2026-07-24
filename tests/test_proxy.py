@@ -5,8 +5,9 @@ import time
 import unittest
 
 from src.net import quick_ping, test_proxy
-from src.proxy import ProxyNode, test_node, ProxyStatus, ProxyChecker, ProxyUpdater
+from src.proxy import ProxyNode, ProxyStatus
 from src.settings import *
+from src.updater import ProxyChecker, ProxyUpdater, test_node
 
 def create_host(
     protocol: str, port: int, 

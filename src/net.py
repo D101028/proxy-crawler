@@ -3,6 +3,8 @@ from ping3 import ping
 
 import requests
 
+from src.mylog import *
+
 def quick_ping(host, timeout: int) -> int:
     """
     Ping 指定的 IP 或網域並返回連線狀態
@@ -48,9 +50,7 @@ def test_proxy(
 
         response.raise_for_status()
         return int(response.elapsed.total_seconds() * 1000)
-    except (requests.RequestException, requests.HTTPError):
-        # 忽略失敗的 Proxy，不做處理
-        pass
     except Exception as e:
-        raise e
+        log_error(f"test_proxy Error: {e}")
+        
     return -1
